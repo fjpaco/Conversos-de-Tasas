@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Conversor USD · MXN · CLP · UF</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💱</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EEF1F4; --card:#FFFFFF; --ink:#14202E; --muted:#5B6878;
+  --line:#CBD3DC; --accent:#1F6F5C; --accent-soft:#D9EEE7; --warn:#9A5B00; --warn-soft:#FBEBD2;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#121A24; --card:#1A2533; --ink:#E6ECF2; --muted:#93A1B2;
+    --line:#2C3A4B; --accent:#5FC2A5; --accent-soft:#16352E; --warn:#F0B35C; --warn-soft:#3A2A12;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#121A24; --card:#1A2533; --ink:#E6ECF2; --muted:#93A1B2;
+  --line:#2C3A4B; --accent:#5FC2A5; --accent-soft:#16352E; --warn:#F0B35C; --warn-soft:#3A2A12;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:16px; line-height:1.45;
+}
+main{max-width:680px; margin:0 auto; padding:32px 20px 48px}
+h1{
+  font-size:clamp(1.5rem,4vw,2rem); font-weight:800; font-stretch:115%;
+  letter-spacing:-.01em; margin:0 0 4px;
+}
+.lead{color:var(--muted); margin:0 0 24px; max-width:60ch}
+
+.board{background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden}
+.row{
+  display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:12px;
+  padding:14px 16px 14px 20px; border-top:1px solid var(--line); position:relative;
+  transition:background .15s;
+}
+.row:first-child{border-top:0}
+.row::before{
+  content:""; position:absolute; left:0; top:0; bottom:0; width:5px; background:transparent;
+  transition:background .15s;
+}
+.row.active{background:var(--accent-soft)}
+.row.active::before{background:var(--accent)}
+.code{display:flex; flex-direction:column; min-width:74px}
+.code b{font-size:1.35rem; font-weight:800; font-stretch:120%; line-height:1.1}
+.code span{font-size:.8rem; color:var(--muted)}
+.amount{
+  width:100%; min-width:0; border:0; background:transparent; color:var(--ink);
+  font:inherit; font-size:clamp(1.6rem,6vw,2.4rem); font-weight:600; font-stretch:75%;
+  font-variant-numeric:tabular-nums; text-align:right; padding:4px 0; outline:none;
+}
+.amount::placeholder{color:var(--line)}
+.row:focus-within{box-shadow:inset 0 0 0 2px var(--accent)}
+.copy{
+  border:1px solid var(--line); background:transparent; color:var(--muted);
+  font:inherit; font-size:.8rem; padding:6px 10px; border-radius:8px; cursor:pointer;
+}
+.copy:hover{color:var(--ink); border-color:var(--ink)}
+.copy:focus-visible,.btn:focus-visible,.rate-input:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+.status{
+  display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;
+  margin:18px 0 8px;
+}
+.status p{margin:0; font-size:.9rem; color:var(--muted)}
+.status p.warn{color:var(--warn)}
+.actions{display:flex; gap:8px}
+.btn{
+  border:1px solid var(--ink); background:var(--ink); color:var(--paper);
+  font:inherit; font-weight:600; font-size:.9rem; padding:8px 14px; border-radius:8px; cursor:pointer;
+}
+.btn.ghost{background:transparent; color:var(--ink)}
+.btn[disabled]{opacity:.55; cursor:wait}
+
+.rates{margin-top:14px; border-top:1px solid var(--line)}
+.rates h2{font-size:1rem; font-weight:700; margin:18px 0 8px}
+.rate-table{width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; font-size:.95rem}
+.rate-table td{padding:7px 0; border-bottom:1px solid var(--line); vertical-align:middle}
+.rate-table td:nth-child(2){text-align:right; font-weight:600}
+.rate-table td:nth-child(3){text-align:right; color:var(--muted); font-size:.82rem; padding-left:12px; white-space:nowrap}
+.rate-input{
+  width:9.5em; text-align:right; font:inherit; font-weight:600; color:var(--ink);
+  background:var(--paper); border:1px solid var(--line); border-radius:6px; padding:4px 6px;
+}
+.derived{margin-top:14px; font-size:.88rem; color:var(--muted)}
+.derived span{display:inline-block; margin-right:16px}
+.force{margin:0 0 6px; font-size:.85rem; color:var(--muted)}
+.force a{color:var(--accent); font-weight:600}
+.force a[hidden]+span{display:none}
+.note{margin-top:22px; font-size:.82rem; color:var(--muted); max-width:62ch}
+.toast{
+  position:fixed; left:50%; bottom:calc(20px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%);
+  background:var(--ink); color:var(--paper); padding:8px 14px; border-radius:8px; font-size:.9rem;
+  opacity:0; pointer-events:none; transition:opacity .2s;
+}
+.toast.show{opacity:1}
+@media (max-width:480px){
+  .row{grid-template-columns:auto 1fr; padding-right:12px}
+  .copy{grid-column:1 / -1; justify-self:end; margin-top:-6px}
+  .rate-table td:nth-child(3){display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Conversor USD, MXN, CLP y UF</h1>
+  <p class="lead">Escribe un monto en cualquier fila y las demás se calculan solas. Las tasas se revisan cada vez que abres la página y una vez por hora si la dejas abierta.</p>
+
+  <section class="board" aria-label="Montos">
+    <div class="row" data-cur="USD">
+      <label class="code" for="in-USD"><b>USD</b><span>Dólar</span></label>
+      <input class="amount" id="in-USD" inputmode="decimal" autocomplete="off" placeholder="0.00">
+      <button class="copy" data-copy="USD">Copiar</button>
+    </div>
+    <div class="row" data-cur="MXN">
+      <label class="code" for="in-MXN"><b>MXN</b><span>Peso mexicano</span></label>
+      <input class="amount" id="in-MXN" inputmode="decimal" autocomplete="off" placeholder="0.00">
+      <button class="copy" data-copy="MXN">Copiar</button>
+    </div>
+    <div class="row" data-cur="CLP">
+      <label class="code" for="in-CLP"><b>CLP</b><span>Peso chileno</span></label>
+      <input class="amount" id="in-CLP" inputmode="decimal" autocomplete="off" placeholder="0">
+      <button class="copy" data-copy="CLP">Copiar</button>
+    </div>
+    <div class="row" data-cur="UF">
+      <label class="code" for="in-UF"><b>UF</b><span>Unidad de Fomento</span></label>
+      <input class="amount" id="in-UF" inputmode="decimal" autocomplete="off" placeholder="0.00">
+      <button class="copy" data-copy="UF">Copiar</button>
+    </div>
+  </section>
+
+  <div class="status">
+    <p id="status">Cargando tasas…</p>
+    <div class="actions">
+      <button class="btn ghost" id="edit">Editar tasas</button>
+      <button class="btn" id="refresh">Actualizar ahora</button>
+    </div>
+  </div>
+
+  <p class="force"><a id="force" hidden target="_blank" rel="noopener">Forzar actualización en GitHub</a> <span>(abre Actions; usa "Run workflow" y recarga en un par de minutos)</span></p>
+
+  <section class="rates" aria-label="Tasas en uso">
+    <h2>Tasas en uso</h2>
+    <table class="rate-table">
+      <tbody>
+        <tr><td>1 USD en MXN</td><td id="r-mxn"></td><td id="d-mxn"></td></tr>
+        <tr><td>1 USD en CLP</td><td id="r-clp"></td><td id="d-clp"></td></tr>
+        <tr><td>1 UF en CLP</td><td id="r-uf"></td><td id="d-uf"></td></tr>
+      </tbody>
+    </table>
+    <div class="derived" id="derived"></div>
+  </section>
+
+  <p class="note">Las tasas se descargan en un servidor de GitHub dos veces al día y se guardan en tasas.json; esta página las lee al abrirse, cada hora y con el botón. Fuentes: UF y dólar observado de mindicador.cl (datos del Banco Central de Chile); USD/MXN del FIX de Banxico si configuraste el token, o de mercado (open.er-api.com) si no. Si no hay internet, se usan las últimas tasas guardadas en este navegador.</p>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  "use strict";
+  // Valores de respaldo (sep 2026) por si nunca se ha podido descargar nada
+  var FALLBACK = {
+    mxn:{v:17.1527, date:"2026-09-16", src:"respaldo Banxico"},
+    clp:{v:959.47,  date:"2026-09-18", src:"respaldo mercado"},
+    uf: {v:41057.20,date:"2026-09-30", src:"respaldo SII"},
+    checked:null
+  };
+  var DEC = {USD:2, MXN:2, CLP:0, UF:2};
+  var KEY = "conversor-tasas-v1";
+  var rates = load() || JSON.parse(JSON.stringify(FALLBACK));
+  var lastSource = "USD", lastValue = null, editing = false;
+
+  var $ = function(id){ return document.getElementById(id); };
+  var inputs = {USD:$("in-USD"), MXN:$("in-MXN"), CLP:$("in-CLP"), UF:$("in-UF")};
+
+  function load(){ try{ var r = JSON.parse(localStorage.getItem(KEY)); return r && r.mxn && r.clp && r.uf ? r : null; }catch(e){ return null; } }
+  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(rates)); }catch(e){} }
+  function today(){ var d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+
+  function fmt(n, dec){
+    if(n===null || !isFinite(n)) return "";
+    return n.toLocaleString("es-MX",{minimumFractionDigits:dec, maximumFractionDigits:dec});
+  }
+  function parse(s){
+    if(!s) return null;
+    s = String(s).replace(/[^\d.,-]/g,"");
+    // Acepta 1,234.56 y también 1.234,56
+    var lastComma = s.lastIndexOf(","), lastDot = s.lastIndexOf(".");
+    if(lastComma > lastDot){ s = s.replace(/\./g,"").replace(",","."); }
+    else { s = s.replace(/,/g,""); }
+    var n = parseFloat(s);
+    return isFinite(n) ? n : null;
+  }
+  function niceDate(iso){
+    if(!iso) return "";
+    var p = iso.slice(0,10).split("-");
+    var m = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+    return parseInt(p[2],10)+" "+m[parseInt(p[1],10)-1]+" "+p[0];
+  }
+
+  // Todo pasa por USD
+  function toUSD(cur, v){
+    if(cur==="USD") return v;
+    if(cur==="MXN") return v / rates.mxn.v;
+    if(cur==="CLP") return v / rates.clp.v;
+    if(cur==="UF")  return v * rates.uf.v / rates.clp.v;
+  }
+  function fromUSD(cur, usd){
+    if(cur==="USD") return usd;
+    if(cur==="MXN") return usd * rates.mxn.v;
+    if(cur==="CLP") return usd * rates.clp.v;
+    if(cur==="UF")  return usd * rates.clp.v / rates.uf.v;
+  }
+
+  function recalc(){
+    document.querySelectorAll(".row").forEach(function(r){ r.classList.toggle("active", r.dataset.cur===lastSource && lastValue!==null); });
+    if(lastValue===null){
+      Object.keys(inputs).forEach(function(c){ if(c!==lastSource) inputs[c].value=""; });
+      return;
+    }
+    var usd = toUSD(lastSource, lastValue);
+    Object.keys(inputs).forEach(function(c){
+      if(c===lastSource) return;
+      inputs[c].value = fmt(fromUSD(c, usd), DEC[c]);
+    });
+  }
+
+  Object.keys(inputs).forEach(function(cur){
+    var el = inputs[cur];
+    el.addEventListener("input", function(){
+      lastSource = cur; lastValue = parse(el.value); recalc();
+    });
+    el.addEventListener("focus", function(){ el.select(); });
+    el.addEventListener("blur", function(){
+      if(lastSource===cur && lastValue!==null) el.value = fmt(lastValue, DEC[cur]);
+    });
+  });
+
+  document.querySelectorAll(".copy").forEach(function(b){
+    b.addEventListener("click", function(){
+      var v = inputs[b.dataset.copy].value;
+      if(!v){ toast("No hay monto para copiar"); return; }
+      var done = function(){ toast(b.dataset.copy+" "+v+" copiado"); };
+      if(navigator.clipboard) navigator.clipboard.writeText(v).then(done, function(){ fallbackCopy(v); done(); });
+      else { fallbackCopy(v); done(); }
+    });
+  });
+  function fallbackCopy(t){ var ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy");}catch(e){} ta.remove(); }
+
+  var toastTimer;
+  function toast(msg){ var t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(function(){t.classList.remove("show");},1800); }
+
+  function renderRates(){
+    var rows = [["mxn",4],["clp",2],["uf",2]];
+    rows.forEach(function(r){
+      var k=r[0], cell=$("r-"+k);
+      if(editing){
+        cell.innerHTML = "";
+        var inp = document.createElement("input");
+        inp.className="rate-input"; inp.inputMode="decimal"; inp.value = fmt(rates[k].v, r[1]);
+        inp.setAttribute("aria-label","Tasa "+k.toUpperCase());
+        inp.addEventListener("change", function(){
+          var n = parse(inp.value);
+          if(n && n>0){ rates[k] = {v:n, date:today(), src:"manual"}; save(); recalc(); renderDerived(); $("d-"+k).textContent = "manual"; }
+          else { inp.value = fmt(rates[k].v, r[1]); }
+        });
+        cell.appendChild(inp);
+      } else {
+        cell.textContent = fmt(rates[k].v, r[1]);
+      }
+      $("d-"+k).textContent = rates[k].src==="manual" ? "manual" : niceDate(rates[k].date)+", "+rates[k].src;
+    });
+    renderDerived();
+  }
+  function renderDerived(){
+    var ufUsd = rates.uf.v / rates.clp.v;
+    var mxnClp = rates.clp.v / rates.mxn.v;
+    var ufMxn = rates.uf.v / mxnClp;
+    $("derived").innerHTML =
+      "<span>1 UF = "+fmt(ufUsd,2)+" USD</span>"+
+      "<span>1 UF = "+fmt(ufMxn,2)+" MXN</span>"+
+      "<span>1 MXN = "+fmt(mxnClp,2)+" CLP</span>";
+  }
+
+  function setStatus(msg, warn){ var s=$("status"); s.textContent=msg; s.classList.toggle("warn", !!warn); }
+
+  function getJSON(url, ms){
+    var ctrl = new AbortController(); var t = setTimeout(function(){ ctrl.abort(); }, ms||8000);
+    return fetch(url, {signal:ctrl.signal, cache:"no-store"}).then(function(r){
+      clearTimeout(t); if(!r.ok) throw new Error("HTTP "+r.status); return r.json();
+    }).catch(function(e){ clearTimeout(t); throw e; });
+  }
+
+  function fmtChecked(iso){
+    var d = new Date(iso);
+    if(isNaN(d)) return "";
+    return niceDate(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"))+
+      " a las "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+  }
+
+  // 1) Tasas del servidor: tasas.json, que GitHub Actions actualiza todos los días
+  function fromServer(){
+    return getJSON("tasas.json?t="+Date.now(), 6000).then(function(d){
+      if(!(d && d.mxn && d.clp && d.uf)) throw new Error("tasas.json incompleto");
+      ["mxn","clp","uf"].forEach(function(k){ rates[k] = {v:+d[k].v, date:d[k].date, src:d[k].src}; });
+      rates.checked = today(); save();
+      return d;
+    });
+  }
+
+  // 2) Respaldo: consulta directa a las fuentes (por si abres el archivo sin servidor)
+  function fromLive(){
+    var ok = {mxn:false, clp:false, uf:false};
+    var pChile = getJSON("https://mindicador.cl/api").then(function(d){
+      if(d.uf && d.uf.valor){ rates.uf = {v:+d.uf.valor, date:d.uf.fecha.slice(0,10), src:"mindicador"}; ok.uf=true; }
+      if(d.dolar && d.dolar.valor){ rates.clp = {v:+d.dolar.valor, date:d.dolar.fecha.slice(0,10), src:"dólar observado"}; ok.clp=true; }
+    }).catch(function(){});
+    var pFx = getJSON("https://open.er-api.com/v6/latest/USD").then(function(d){
+      if(d.result!=="success") throw new Error("er-api");
+      var date = new Date(d.time_last_update_unix*1000).toISOString().slice(0,10);
+      return {mxn:d.rates.MXN, clp:d.rates.CLP, date:date, src:"er-api"};
+    }).catch(function(){
+      return getJSON("https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json").then(function(d){
+        return {mxn:d.usd.mxn, clp:d.usd.clp, date:d.date, src:"currency-api"};
+      });
+    }).catch(function(){ return null; });
+    return Promise.all([pChile, pFx]).then(function(res){
+      var fx = res[1];
+      if(fx && fx.mxn){ rates.mxn = {v:+fx.mxn, date:fx.date, src:fx.src}; ok.mxn=true; }
+      if(!ok.clp && fx && fx.clp){ rates.clp = {v:+fx.clp, date:fx.date, src:fx.src}; ok.clp=true; }
+      if(ok.mxn || ok.clp || ok.uf){ rates.checked = today(); save(); }
+      return ok;
+    });
+  }
+
+  function refresh(manual){
+    var btn=$("refresh"); btn.disabled=true; setStatus("Revisando tasas…");
+    fromServer().then(function(d){
+      var msg = "Tasas del servidor, actualizadas el "+fmtChecked(d.checked)+".";
+      var warn = d.errors && d.errors.length;
+      if(warn) msg += " Alguna fuente falló en la última corrida; se conservó el valor anterior.";
+      setStatus(msg, warn);
+      if(manual) toast("Tasas actualizadas");
+    }).catch(function(){
+      return fromLive().then(function(ok){
+        var any = ok.mxn || ok.clp || ok.uf;
+        var missing = Object.keys(ok).filter(function(k){ return !ok[k]; }).map(function(k){ return {mxn:"USD/MXN",clp:"USD/CLP",uf:"UF"}[k]; });
+        if(!any) setStatus("Sin conexión a las fuentes. Usando las últimas tasas guardadas.", true);
+        else if(missing.length) setStatus("Actualizado parcialmente. No se pudo obtener: "+missing.join(", ")+".", true);
+        else setStatus("Tasas consultadas en vivo el "+niceDate(today())+".");
+        if(manual && any) toast("Tasas actualizadas");
+      });
+    }).then(function(){ renderRates(); recalc(); btn.disabled=false; });
+  }
+
+  // En GitHub Pages, muestra un enlace para forzar la actualización del servidor
+  (function(){
+    var m = location.hostname.match(/^([^.]+)\.github\.io$/);
+    if(!m) return;
+    var repo = location.pathname.split("/").filter(Boolean)[0];
+    if(!repo) return;
+    var a = $("force");
+    a.href = "https://github.com/"+m[1]+"/"+repo+"/actions/workflows/update-rates.yml";
+    a.hidden = false;
+  })();
+
+  $("refresh").addEventListener("click", function(){ refresh(true); });
+  $("edit").addEventListener("click", function(){
+    editing = !editing; $("edit").textContent = editing ? "Listo" : "Editar tasas"; renderRates();
+  });
+
+  renderRates();
+  refresh(false);
+  // Si la página queda abierta, vuelve a revisar cada hora
+  setInterval(function(){ refresh(false); }, 60*60*1000);
+
+  lastSource="USD"; lastValue=1000; inputs.USD.value = fmt(1000,2); recalc();
+})();
+</script>
+</body>
+</html>
