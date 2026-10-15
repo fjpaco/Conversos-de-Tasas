@@ -1,6 +1,7 @@
 """Descarga UF, dólar observado (CLP) y USD/MXN y los guarda en tasas.json.
 
-Lo ejecuta GitHub Actions todos los días. No necesita librerías externas.
+Lo ejecuta GitHub Actions todos los días a las 9:30 (hora del centro de México).
+Cada tasa guarda 'date' (fecha oficial del valor) y 'fetched' (cuándo se descargó). No necesita librerías externas.
 Si existe la variable BANXICO_TOKEN, usa el FIX oficial de Banxico para USD/MXN.
 Si una fuente falla, conserva el último valor bueno que había en tasas.json.
 """
@@ -64,12 +65,14 @@ def market():
 
 
 def main():
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     prev = load_previous()
     rates = {k: prev[k] for k in ("mxn", "clp", "uf") if k in prev}
     errors = []
 
     try:
-        rates.update(chile())
+        for k, val in chile().items():
+            rates[k] = {**val, "fetched": now}
     except Exception as e:
         errors.append(f"mindicador: {e}")
 
@@ -83,22 +86,22 @@ def main():
     got_fix = False
     if token:
         try:
-            rates["mxn"] = banxico_fix(token)
+            rates["mxn"] = {**banxico_fix(token), "fetched": now}
             got_fix = True
         except Exception as e:
             errors.append(f"Banxico: {e}")
 
     if mkt:
         if not got_fix:
-            rates["mxn"] = {"v": float(mkt["mxn"]), "date": mkt["date"], "src": mkt["src"]}
-        if rates.get("clp", {}).get("src") != "dólar observado":
-            rates["clp"] = {"v": float(mkt["clp"]), "date": mkt["date"], "src": mkt["src"]}
+            rates["mxn"] = {"v": float(mkt["mxn"]), "date": mkt["date"], "src": mkt["src"], "fetched": now}
+        if not (rates.get("clp", {}).get("src") == "dólar observado" and rates["clp"].get("fetched") == now):
+            rates["clp"] = {"v": float(mkt["clp"]), "date": mkt["date"], "src": mkt["src"], "fetched": now}
 
     missing = [k for k in ("mxn", "clp", "uf") if k not in rates]
     if missing:
         raise SystemExit(f"Faltan tasas y no hay valores previos: {missing}. Errores: {errors}")
 
-    rates["checked"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    rates["checked"] = now
     rates["errors"] = errors
     OUT.write_text(json.dumps(rates, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(rates, ensure_ascii=False, indent=2))
