@@ -184,7 +184,7 @@ h1{
 (function(){
   "use strict";
   var DEC = {USD:2, MXN:2, CLP:0, UF:2};
-  var KEY = "conversor-tasas-v2";
+  var KEY = "conversor-tasas-v3";
   var NAMES = {mxn:"USD/MXN", clp:"USD/CLP", uf:"UF"};
   var $ = function(id){ return document.getElementById(id); };
   var inputs = {USD:$("in-USD"), MXN:$("in-MXN"), CLP:$("in-CLP"), UF:$("in-UF")};
@@ -295,8 +295,10 @@ h1{
       line($("st-server"), "Servidor:", "todavía no ha corrido la actualización automática. Revisa la pestaña Actions en GitHub.", true);
     }
     if(state.liveChecked){
-      var miss = Object.keys(state.liveOk||{}).filter(function(k){ return !state.liveOk[k]; }).map(function(k){ return NAMES[k]; });
-      line($("st-live"), "Consulta directa:", "el "+fechaHora(state.liveChecked)+"."+(miss.length?" No respondió: "+miss.join(", ")+".":""), miss.length===3);
+      var o=state.liveOk||{}, miss=[];
+      if(!o.uf && !o.clp) miss.push("mindicador (UF y dólar observado; se usan los del servidor)");
+      if(!o.mxn) miss.push("tipo de cambio de mercado");
+      line($("st-live"), "Consulta directa:", "el "+fechaHora(state.liveChecked)+"."+(miss.length?" No respondió: "+miss.join(", ")+".":""), miss.length===2);
     } else line($("st-live"), "Consulta directa:", "sin realizar.", false);
     var m=$("st-manual");
     if(anyManual()){ m.hidden=false; m.innerHTML=""; var b=document.createElement("button"); b.className="btn link"; b.textContent="Volver a tasas automáticas"; b.onclick=resetManual; m.appendChild(document.createTextNode("Hay tasas manuales en uso. ")); m.appendChild(b); m.classList.add("warn"); }
@@ -326,7 +328,7 @@ h1{
   }
 
   function fromLive(){
-    var ok={mxn:false, clp:false, uf:false}, now=nowISO();
+    var ok={mxn:false, clp:false, uf:false, mkt:false}, now=nowISO();
     var pCl = getJSON("https://mindicador.cl/api").then(function(d){
       if(d.uf && d.uf.valor){ offer("uf",{v:+d.uf.valor, date:d.uf.fecha.slice(0,10), src:"mindicador", fetched:now}); ok.uf=true; }
       if(d.dolar && d.dolar.valor){ offer("clp",{v:+d.dolar.valor, date:d.dolar.fecha.slice(0,10), src:"dólar observado", fetched:now}); ok.clp=true; }
@@ -347,7 +349,12 @@ h1{
         if(!(cur.src==="FIX Banxico" && cur.date>=fx.date)) offer("mxn",{v:+fx.mxn, date:fx.date, src:fx.src, fetched:now});
         ok.mxn=true;
       }
-      if(!ok.clp && fx && fx.clp){ offer("clp",{v:+fx.clp, date:fx.date, src:fx.src, fetched:now}); ok.clp=true; }
+      // El dólar observado oficial no se reemplaza por el de mercado salvo que este sea de una fecha posterior
+      if(!ok.clp && fx && fx.clp){
+        var c=state.rates.clp;
+        if(!(/observado/.test(c.src) && c.date>=fx.date)) offer("clp",{v:+fx.clp, date:fx.date, src:fx.src, fetched:now});
+        ok.mkt=true;
+      }
       state.liveChecked=now; state.liveOk=ok;
     });
   }
