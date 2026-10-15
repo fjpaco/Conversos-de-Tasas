@@ -1,7 +1,24 @@
 {
-  "mxn": {"v": 17.1527, "date": "2026-09-16", "src": "valor inicial", "fetched": null},
-  "clp": {"v": 959.47, "date": "2026-09-18", "src": "valor inicial", "fetched": null},
-  "uf": {"v": 41057.2, "date": "2026-09-30", "src": "valor inicial", "fetched": null},
-  "checked": null,
-  "errors": []
+  "mxn": {
+    "v": 18.464303,
+    "date": "2026-10-15",
+    "src": "er-api",
+    "fetched": "2026-10-15T17:27:55Z"
+  },
+  "clp": {
+    "v": 981.815969,
+    "date": "2026-10-15",
+    "src": "er-api",
+    "fetched": "2026-10-15T17:27:55Z"
+  },
+  "uf": {
+    "v": 41057.2,
+    "date": "2026-09-30",
+    "src": "valor inicial",
+    "fetched": null
+  },
+  "checked": "2026-10-15T17:27:55Z",
+  "errors": [
+    "mindicador: The read operation timed out"
+  ]
 }
