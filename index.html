@@ -144,7 +144,7 @@ h1{
     </div>
     <div class="row" data-cur="UF">
       <label class="code" for="in-UF"><b>UF</b><span>Unidad de Fomento</span></label>
-      <input class="amount" id="in-UF" inputmode="decimal" autocomplete="off" placeholder="0.00">
+      <input class="amount" id="in-UF" inputmode="decimal" autocomplete="off" placeholder="0.0000">
       <button class="copy" data-copy="UF">Copiar</button>
     </div>
   </section>
@@ -183,7 +183,7 @@ h1{
 <script>
 (function(){
   "use strict";
-  var DEC = {USD:2, MXN:2, CLP:0, UF:2};
+  var DEC = {USD:2, MXN:2, CLP:0, UF:4};
   var KEY = "conversor-tasas-v3";
   var NAMES = {mxn:"USD/MXN", clp:"USD/CLP", uf:"UF"};
   var $ = function(id){ return document.getElementById(id); };
