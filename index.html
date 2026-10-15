@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Conversor USD · MXN · CLP · UF</title>
+<title>Conversor USD, MXN, CLP y UF</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💱</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -88,7 +88,6 @@ h1{
 .rate-table{width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; font-size:.95rem}
 .rate-table td{padding:7px 0; border-bottom:1px solid var(--line); vertical-align:middle}
 .rate-table td:nth-child(2){text-align:right; font-weight:600}
-.rate-table td:nth-child(3){text-align:right; color:var(--muted); font-size:.82rem; padding-left:12px; white-space:nowrap}
 .rate-input{
   width:9.5em; text-align:right; font:inherit; font-weight:600; color:var(--ink);
   background:var(--paper); border:1px solid var(--line); border-radius:6px; padding:4px 6px;
@@ -108,15 +107,24 @@ h1{
 @media (max-width:480px){
   .row{grid-template-columns:auto 1fr; padding-right:12px}
   .copy{grid-column:1 / -1; justify-self:end; margin-top:-6px}
-  .rate-table td:nth-child(3){display:none}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.status-box{margin:18px 0 8px}
+.status-line{margin:0 0 4px; font-size:.9rem; color:var(--muted)}
+.status-line strong{color:var(--ink); font-weight:600}
+.status-line.warn, .status-line.warn strong{color:var(--warn)}
+.status-row{display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:12px}
+.rate-table td:first-child small{display:block; color:var(--muted); font-size:.8rem; margin-top:2px}
+.rate-table td:first-child small.manual{color:var(--warn)}
+.btn.link{border:0; background:none; color:var(--accent); padding:0; font-weight:600; text-decoration:underline; cursor:pointer}
+.force{margin:8px 0 6px; font-size:.85rem; color:var(--muted)}
+.force a{color:var(--accent); font-weight:600}
 </style>
 </head>
 <body>
 <main>
   <h1>Conversor USD, MXN, CLP y UF</h1>
-  <p class="lead">Escribe un monto en cualquier fila y las demás se calculan solas. Las tasas se revisan cada vez que abres la página y una vez por hora si la dejas abierta.</p>
+  <p class="lead">Escribe un monto en cualquier fila y las demás se calculan solas. El servidor descarga las tasas todos los días a las 9:30; el botón "Actualizar ahora" las consulta en ese momento.</p>
 
   <section class="board" aria-label="Montos">
     <div class="row" data-cur="USD">
@@ -141,252 +149,239 @@ h1{
     </div>
   </section>
 
-  <div class="status">
-    <p id="status">Cargando tasas…</p>
-    <div class="actions">
-      <button class="btn ghost" id="edit">Editar tasas</button>
-      <button class="btn" id="refresh">Actualizar ahora</button>
+  <div class="status-box">
+    <div class="status-row">
+      <div>
+        <p class="status-line" id="st-server"></p>
+        <p class="status-line" id="st-live"></p>
+        <p class="status-line" id="st-manual" hidden></p>
+      </div>
+      <div class="actions">
+        <button class="btn ghost" id="edit">Editar tasas</button>
+        <button class="btn" id="refresh">Actualizar ahora</button>
+      </div>
     </div>
+    <p class="force" id="force-wrap" hidden><a id="force" target="_blank" rel="noopener">Forzar actualización del servidor en GitHub</a></p>
   </div>
-
-  <p class="force"><a id="force" hidden target="_blank" rel="noopener">Forzar actualización en GitHub</a> <span>(abre Actions; usa "Run workflow" y recarga en un par de minutos)</span></p>
 
   <section class="rates" aria-label="Tasas en uso">
     <h2>Tasas en uso</h2>
     <table class="rate-table">
       <tbody>
-        <tr><td>1 USD en MXN</td><td id="r-mxn"></td><td id="d-mxn"></td></tr>
-        <tr><td>1 USD en CLP</td><td id="r-clp"></td><td id="d-clp"></td></tr>
-        <tr><td>1 UF en CLP</td><td id="r-uf"></td><td id="d-uf"></td></tr>
+        <tr><td>1 USD en MXN<small id="m-mxn"></small></td><td id="r-mxn"></td></tr>
+        <tr><td>1 USD en CLP<small id="m-clp"></small></td><td id="r-clp"></td></tr>
+        <tr><td>1 UF en CLP<small id="m-uf"></small></td><td id="r-uf"></td></tr>
       </tbody>
     </table>
     <div class="derived" id="derived"></div>
   </section>
 
-  <p class="note">Las tasas se descargan en un servidor de GitHub dos veces al día y se guardan en tasas.json; esta página las lee al abrirse, cada hora y con el botón. Fuentes: UF y dólar observado de mindicador.cl (datos del Banco Central de Chile); USD/MXN del FIX de Banxico si configuraste el token, o de mercado (open.er-api.com) si no. Si no hay internet, se usan las últimas tasas guardadas en este navegador.</p>
+  <p class="note">Fuentes: UF y dólar observado de mindicador.cl (datos del Banco Central de Chile). USD/MXN del FIX de Banxico si configuraste el token en GitHub, o de mercado (open.er-api.com) si no. Si una fuente no responde, se conserva el último valor bueno.</p>
 </main>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 (function(){
   "use strict";
-  // Valores de respaldo (sep 2026) por si nunca se ha podido descargar nada
-  var FALLBACK = {
-    mxn:{v:17.1527, date:"2026-09-16", src:"respaldo Banxico"},
-    clp:{v:959.47,  date:"2026-09-18", src:"respaldo mercado"},
-    uf: {v:41057.20,date:"2026-09-30", src:"respaldo SII"},
-    checked:null
-  };
   var DEC = {USD:2, MXN:2, CLP:0, UF:2};
-  var KEY = "conversor-tasas-v1";
-  var rates = load() || JSON.parse(JSON.stringify(FALLBACK));
-  var lastSource = "USD", lastValue = null, editing = false;
-
+  var KEY = "conversor-tasas-v2";
+  var NAMES = {mxn:"USD/MXN", clp:"USD/CLP", uf:"UF"};
   var $ = function(id){ return document.getElementById(id); };
   var inputs = {USD:$("in-USD"), MXN:$("in-MXN"), CLP:$("in-CLP"), UF:$("in-UF")};
 
-  function load(){ try{ var r = JSON.parse(localStorage.getItem(KEY)); return r && r.mxn && r.clp && r.uf ? r : null; }catch(e){ return null; } }
-  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(rates)); }catch(e){} }
-  function today(){ var d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+  // Estado: cada tasa guarda valor (v), fecha oficial (date), fuente (src) y cuándo se obtuvo (fetched)
+  var state = load() || {
+    rates:{
+      mxn:{v:17.1527, date:"2026-09-16", src:"valor inicial", fetched:null},
+      clp:{v:959.47,  date:"2026-09-18", src:"valor inicial", fetched:null},
+      uf: {v:41057.20,date:"2026-09-30", src:"valor inicial", fetched:null}
+    },
+    serverChecked:null, serverErrors:[], liveChecked:null, liveOk:null
+  };
+  var lastSource = "USD", lastValue = 1000, editing = false;
 
-  function fmt(n, dec){
-    if(n===null || !isFinite(n)) return "";
-    return n.toLocaleString("es-MX",{minimumFractionDigits:dec, maximumFractionDigits:dec});
-  }
+  function load(){ try{ var s = JSON.parse(localStorage.getItem(KEY)); return s && s.rates ? s : null; }catch(e){ return null; } }
+  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+
+  function fmt(n, dec){ return (n===null || !isFinite(n)) ? "" : n.toLocaleString("es-MX",{minimumFractionDigits:dec, maximumFractionDigits:dec}); }
   function parse(s){
     if(!s) return null;
     s = String(s).replace(/[^\d.,-]/g,"");
-    // Acepta 1,234.56 y también 1.234,56
-    var lastComma = s.lastIndexOf(","), lastDot = s.lastIndexOf(".");
-    if(lastComma > lastDot){ s = s.replace(/\./g,"").replace(",","."); }
-    else { s = s.replace(/,/g,""); }
-    var n = parseFloat(s);
-    return isFinite(n) ? n : null;
+    if(s.lastIndexOf(",") > s.lastIndexOf(".")) s = s.replace(/\./g,"").replace(",",".");
+    else s = s.replace(/,/g,"");
+    var n = parseFloat(s); return isFinite(n) ? n : null;
   }
-  function niceDate(iso){
+  var MES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+  function fecha(iso){ if(!iso) return ""; var p = iso.slice(0,10).split("-"); return parseInt(p[2],10)+" "+MES[+p[1]-1]+" "+p[0]; }
+  function fechaHora(iso){
     if(!iso) return "";
-    var p = iso.slice(0,10).split("-");
-    var m = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
-    return parseInt(p[2],10)+" "+m[parseInt(p[1],10)-1]+" "+p[0];
+    var d = new Date(iso); if(isNaN(d)) return "";
+    return d.getDate()+" "+MES[d.getMonth()]+" "+d.getFullYear()+" a las "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")+" h";
   }
+  function nowISO(){ return new Date().toISOString(); }
+  function todayISO(){ var d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 
-  // Todo pasa por USD
-  function toUSD(cur, v){
-    if(cur==="USD") return v;
-    if(cur==="MXN") return v / rates.mxn.v;
-    if(cur==="CLP") return v / rates.clp.v;
-    if(cur==="UF")  return v * rates.uf.v / rates.clp.v;
-  }
-  function fromUSD(cur, usd){
-    if(cur==="USD") return usd;
-    if(cur==="MXN") return usd * rates.mxn.v;
-    if(cur==="CLP") return usd * rates.clp.v;
-    if(cur==="UF")  return usd * rates.clp.v / rates.uf.v;
-  }
-
+  // ---------- Conversión (todo pasa por USD) ----------
+  function R(k){ return state.rates[k].v; }
+  function toUSD(c,v){ return c==="USD"?v : c==="MXN"? v/R("mxn") : c==="CLP"? v/R("clp") : v*R("uf")/R("clp"); }
+  function fromUSD(c,u){ return c==="USD"?u : c==="MXN"? u*R("mxn") : c==="CLP"? u*R("clp") : u*R("clp")/R("uf"); }
   function recalc(){
     document.querySelectorAll(".row").forEach(function(r){ r.classList.toggle("active", r.dataset.cur===lastSource && lastValue!==null); });
-    if(lastValue===null){
-      Object.keys(inputs).forEach(function(c){ if(c!==lastSource) inputs[c].value=""; });
-      return;
-    }
-    var usd = toUSD(lastSource, lastValue);
+    var usd = lastValue===null ? null : toUSD(lastSource, lastValue);
     Object.keys(inputs).forEach(function(c){
       if(c===lastSource) return;
-      inputs[c].value = fmt(fromUSD(c, usd), DEC[c]);
+      inputs[c].value = usd===null ? "" : fmt(fromUSD(c,usd), DEC[c]);
     });
   }
-
   Object.keys(inputs).forEach(function(cur){
     var el = inputs[cur];
-    el.addEventListener("input", function(){
-      lastSource = cur; lastValue = parse(el.value); recalc();
-    });
+    el.addEventListener("input", function(){ lastSource=cur; lastValue=parse(el.value); recalc(); });
     el.addEventListener("focus", function(){ el.select(); });
-    el.addEventListener("blur", function(){
-      if(lastSource===cur && lastValue!==null) el.value = fmt(lastValue, DEC[cur]);
-    });
+    el.addEventListener("blur", function(){ if(lastSource===cur && lastValue!==null) el.value = fmt(lastValue, DEC[cur]); });
   });
 
+  // ---------- Copiar ----------
   document.querySelectorAll(".copy").forEach(function(b){
     b.addEventListener("click", function(){
       var v = inputs[b.dataset.copy].value;
       if(!v){ toast("No hay monto para copiar"); return; }
       var done = function(){ toast(b.dataset.copy+" "+v+" copiado"); };
-      if(navigator.clipboard) navigator.clipboard.writeText(v).then(done, function(){ fallbackCopy(v); done(); });
-      else { fallbackCopy(v); done(); }
+      if(navigator.clipboard) navigator.clipboard.writeText(v).then(done, function(){ legacyCopy(v); done(); });
+      else { legacyCopy(v); done(); }
     });
   });
-  function fallbackCopy(t){ var ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy");}catch(e){} ta.remove(); }
+  function legacyCopy(t){ var ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy");}catch(e){} ta.remove(); }
+  var tt; function toast(m){ var t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(tt); tt=setTimeout(function(){t.classList.remove("show");},2000); }
 
-  var toastTimer;
-  function toast(msg){ var t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(function(){t.classList.remove("show");},1800); }
+  // ---------- Pintar tasas y leyendas ----------
+  function anyManual(){ return ["mxn","clp","uf"].some(function(k){ return state.rates[k].src==="manual"; }); }
 
   function renderRates(){
-    var rows = [["mxn",4],["clp",2],["uf",2]];
-    rows.forEach(function(r){
-      var k=r[0], cell=$("r-"+k);
+    [["mxn",4],["clp",2],["uf",2]].forEach(function(p){
+      var k=p[0], r=state.rates[k], cell=$("r-"+k), meta=$("m-"+k);
+      cell.innerHTML="";
       if(editing){
-        cell.innerHTML = "";
-        var inp = document.createElement("input");
-        inp.className="rate-input"; inp.inputMode="decimal"; inp.value = fmt(rates[k].v, r[1]);
-        inp.setAttribute("aria-label","Tasa "+k.toUpperCase());
+        var inp=document.createElement("input");
+        inp.className="rate-input"; inp.inputMode="decimal"; inp.value=fmt(r.v,p[1]);
+        inp.setAttribute("aria-label","Tasa "+NAMES[k]);
         inp.addEventListener("change", function(){
-          var n = parse(inp.value);
-          if(n && n>0){ rates[k] = {v:n, date:today(), src:"manual"}; save(); recalc(); renderDerived(); $("d-"+k).textContent = "manual"; }
-          else { inp.value = fmt(rates[k].v, r[1]); }
+          var n=parse(inp.value);
+          if(n && n>0){ state.rates[k]={v:n, date:todayISO(), src:"manual", fetched:nowISO()}; save(); recalc(); renderAll(); }
+          else inp.value=fmt(state.rates[k].v,p[1]);
         });
         cell.appendChild(inp);
-      } else {
-        cell.textContent = fmt(rates[k].v, r[1]);
-      }
-      $("d-"+k).textContent = rates[k].src==="manual" ? "manual" : niceDate(rates[k].date)+", "+rates[k].src;
+      } else cell.textContent = fmt(r.v,p[1]);
+
+      meta.classList.toggle("manual", r.src==="manual");
+      if(r.src==="manual") meta.textContent = "Tasa manual, ingresada el "+fechaHora(r.fetched)+". Las actualizaciones no la cambian.";
+      else if(!r.fetched) meta.textContent = "Valor inicial de ejemplo ("+fecha(r.date)+"). Todavía no se ha actualizado.";
+      else meta.textContent = "Valor del "+fecha(r.date)+", obtenido el "+fechaHora(r.fetched)+". Fuente: "+r.src+".";
     });
-    renderDerived();
-  }
-  function renderDerived(){
-    var ufUsd = rates.uf.v / rates.clp.v;
-    var mxnClp = rates.clp.v / rates.mxn.v;
-    var ufMxn = rates.uf.v / mxnClp;
-    $("derived").innerHTML =
-      "<span>1 UF = "+fmt(ufUsd,2)+" USD</span>"+
-      "<span>1 UF = "+fmt(ufMxn,2)+" MXN</span>"+
-      "<span>1 MXN = "+fmt(mxnClp,2)+" CLP</span>";
+    var ufUsd=R("uf")/R("clp"), mxnClp=R("clp")/R("mxn");
+    $("derived").innerHTML = "<span>1 UF = "+fmt(ufUsd,2)+" USD</span><span>1 UF = "+fmt(R("uf")/mxnClp,2)+" MXN</span><span>1 MXN = "+fmt(mxnClp,2)+" CLP</span>";
   }
 
-  function setStatus(msg, warn){ var s=$("status"); s.textContent=msg; s.classList.toggle("warn", !!warn); }
+  function line(el, label, text, warn){
+    el.innerHTML=""; var b=document.createElement("strong"); b.textContent=label+" ";
+    el.appendChild(b); el.appendChild(document.createTextNode(text)); el.classList.toggle("warn", !!warn);
+  }
+  function renderStatus(){
+    if(state.serverChecked){
+      var errs = state.serverErrors && state.serverErrors.length;
+      line($("st-server"), "Servidor:", "última actualización el "+fechaHora(state.serverChecked)+"."+(errs?" Alguna fuente falló; se conservó el valor anterior.":""), errs);
+    } else if(state.serverChecked===false){
+      line($("st-server"), "Servidor:", "no se pudo leer tasas.json.", true);
+    } else {
+      line($("st-server"), "Servidor:", "todavía no ha corrido la actualización automática. Revisa la pestaña Actions en GitHub.", true);
+    }
+    if(state.liveChecked){
+      var miss = Object.keys(state.liveOk||{}).filter(function(k){ return !state.liveOk[k]; }).map(function(k){ return NAMES[k]; });
+      line($("st-live"), "Consulta directa:", "el "+fechaHora(state.liveChecked)+"."+(miss.length?" No respondió: "+miss.join(", ")+".":""), miss.length===3);
+    } else line($("st-live"), "Consulta directa:", "sin realizar.", false);
+    var m=$("st-manual");
+    if(anyManual()){ m.hidden=false; m.innerHTML=""; var b=document.createElement("button"); b.className="btn link"; b.textContent="Volver a tasas automáticas"; b.onclick=resetManual; m.appendChild(document.createTextNode("Hay tasas manuales en uso. ")); m.appendChild(b); m.classList.add("warn"); }
+    else m.hidden=true;
+  }
+  function renderAll(){ renderRates(); renderStatus(); }
 
+  // ---------- Obtener tasas ----------
   function getJSON(url, ms){
-    var ctrl = new AbortController(); var t = setTimeout(function(){ ctrl.abort(); }, ms||8000);
-    return fetch(url, {signal:ctrl.signal, cache:"no-store"}).then(function(r){
-      clearTimeout(t); if(!r.ok) throw new Error("HTTP "+r.status); return r.json();
-    }).catch(function(e){ clearTimeout(t); throw e; });
+    var c=new AbortController(), t=setTimeout(function(){c.abort();}, ms||8000);
+    return fetch(url,{signal:c.signal, cache:"no-store"}).then(function(r){ clearTimeout(t); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+      .catch(function(e){ clearTimeout(t); throw e; });
+  }
+  // Aplica una tasa solo si no es manual y si es más reciente que la actual
+  function offer(k, cand){
+    var cur = state.rates[k];
+    if(!cand || !(cand.v>0) || cur.src==="manual") return;
+    if(!cur.fetched || (cand.fetched && Date.parse(cand.fetched) >= Date.parse(cur.fetched))) state.rates[k] = cand;
   }
 
-  function fmtChecked(iso){
-    var d = new Date(iso);
-    if(isNaN(d)) return "";
-    return niceDate(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"))+
-      " a las "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
-  }
-
-  // 1) Tasas del servidor: tasas.json, que GitHub Actions actualiza todos los días
   function fromServer(){
     return getJSON("tasas.json?t="+Date.now(), 6000).then(function(d){
-      if(!(d && d.mxn && d.clp && d.uf)) throw new Error("tasas.json incompleto");
-      ["mxn","clp","uf"].forEach(function(k){ rates[k] = {v:+d[k].v, date:d[k].date, src:d[k].src}; });
-      rates.checked = today(); save();
-      return d;
-    });
+      state.serverChecked = d.checked || null;
+      state.serverErrors = d.errors || [];
+      ["mxn","clp","uf"].forEach(function(k){ if(d[k] && d[k].fetched) offer(k, {v:+d[k].v, date:d[k].date, src:d[k].src, fetched:d[k].fetched}); });
+    }).catch(function(){ if(location.protocol!=="file:") state.serverChecked = false; });
   }
 
-  // 2) Respaldo: consulta directa a las fuentes (por si abres el archivo sin servidor)
   function fromLive(){
-    var ok = {mxn:false, clp:false, uf:false};
-    var pChile = getJSON("https://mindicador.cl/api").then(function(d){
-      if(d.uf && d.uf.valor){ rates.uf = {v:+d.uf.valor, date:d.uf.fecha.slice(0,10), src:"mindicador"}; ok.uf=true; }
-      if(d.dolar && d.dolar.valor){ rates.clp = {v:+d.dolar.valor, date:d.dolar.fecha.slice(0,10), src:"dólar observado"}; ok.clp=true; }
+    var ok={mxn:false, clp:false, uf:false}, now=nowISO();
+    var pCl = getJSON("https://mindicador.cl/api").then(function(d){
+      if(d.uf && d.uf.valor){ offer("uf",{v:+d.uf.valor, date:d.uf.fecha.slice(0,10), src:"mindicador", fetched:now}); ok.uf=true; }
+      if(d.dolar && d.dolar.valor){ offer("clp",{v:+d.dolar.valor, date:d.dolar.fecha.slice(0,10), src:"dólar observado", fetched:now}); ok.clp=true; }
     }).catch(function(){});
     var pFx = getJSON("https://open.er-api.com/v6/latest/USD").then(function(d){
       if(d.result!=="success") throw new Error("er-api");
-      var date = new Date(d.time_last_update_unix*1000).toISOString().slice(0,10);
-      return {mxn:d.rates.MXN, clp:d.rates.CLP, date:date, src:"er-api"};
+      return {mxn:d.rates.MXN, clp:d.rates.CLP, date:new Date(d.time_last_update_unix*1000).toISOString().slice(0,10), src:"er-api"};
     }).catch(function(){
       return getJSON("https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json").then(function(d){
         return {mxn:d.usd.mxn, clp:d.usd.clp, date:d.date, src:"currency-api"};
       });
     }).catch(function(){ return null; });
-    return Promise.all([pChile, pFx]).then(function(res){
-      var fx = res[1];
-      if(fx && fx.mxn){ rates.mxn = {v:+fx.mxn, date:fx.date, src:fx.src}; ok.mxn=true; }
-      if(!ok.clp && fx && fx.clp){ rates.clp = {v:+fx.clp, date:fx.date, src:fx.src}; ok.clp=true; }
-      if(ok.mxn || ok.clp || ok.uf){ rates.checked = today(); save(); }
-      return ok;
+    return Promise.all([pCl,pFx]).then(function(res){
+      var fx=res[1];
+      // Si el servidor trae el FIX de Banxico del mismo día, se respeta; el mercado solo lo reemplaza si es de una fecha posterior
+      if(fx && fx.mxn){
+        var cur=state.rates.mxn;
+        if(!(cur.src==="FIX Banxico" && cur.date>=fx.date)) offer("mxn",{v:+fx.mxn, date:fx.date, src:fx.src, fetched:now});
+        ok.mxn=true;
+      }
+      if(!ok.clp && fx && fx.clp){ offer("clp",{v:+fx.clp, date:fx.date, src:fx.src, fetched:now}); ok.clp=true; }
+      state.liveChecked=now; state.liveOk=ok;
     });
   }
 
+  var busy=false;
   function refresh(manual){
-    var btn=$("refresh"); btn.disabled=true; setStatus("Revisando tasas…");
-    fromServer().then(function(d){
-      var msg = "Tasas del servidor, actualizadas el "+fmtChecked(d.checked)+".";
-      var warn = d.errors && d.errors.length;
-      if(warn) msg += " Alguna fuente falló en la última corrida; se conservó el valor anterior.";
-      setStatus(msg, warn);
+    if(busy) return; busy=true;
+    var btn=$("refresh"); btn.disabled=true; btn.textContent="Actualizando…";
+    // Primero el servidor, luego la consulta directa: gana siempre el dato más reciente
+    fromServer().then(fromLive).then(function(){
+      save(); recalc(); renderAll();
       if(manual) toast("Tasas actualizadas");
-    }).catch(function(){
-      return fromLive().then(function(ok){
-        var any = ok.mxn || ok.clp || ok.uf;
-        var missing = Object.keys(ok).filter(function(k){ return !ok[k]; }).map(function(k){ return {mxn:"USD/MXN",clp:"USD/CLP",uf:"UF"}[k]; });
-        if(!any) setStatus("Sin conexión a las fuentes. Usando las últimas tasas guardadas.", true);
-        else if(missing.length) setStatus("Actualizado parcialmente. No se pudo obtener: "+missing.join(", ")+".", true);
-        else setStatus("Tasas consultadas en vivo el "+niceDate(today())+".");
-        if(manual && any) toast("Tasas actualizadas");
-      });
-    }).then(function(){ renderRates(); recalc(); btn.disabled=false; });
+    }).finally(function(){ busy=false; btn.disabled=false; btn.textContent="Actualizar ahora"; });
   }
 
-  // En GitHub Pages, muestra un enlace para forzar la actualización del servidor
-  (function(){
-    var m = location.hostname.match(/^([^.]+)\.github\.io$/);
-    if(!m) return;
-    var repo = location.pathname.split("/").filter(Boolean)[0];
-    if(!repo) return;
-    var a = $("force");
-    a.href = "https://github.com/"+m[1]+"/"+repo+"/actions/workflows/update-rates.yml";
-    a.hidden = false;
-  })();
+  function resetManual(){
+    ["mxn","clp","uf"].forEach(function(k){ if(state.rates[k].src==="manual") state.rates[k].src="manual-anterior", state.rates[k].fetched=null; });
+    save(); refresh(true);
+  }
 
   $("refresh").addEventListener("click", function(){ refresh(true); });
-  $("edit").addEventListener("click", function(){
-    editing = !editing; $("edit").textContent = editing ? "Listo" : "Editar tasas"; renderRates();
-  });
+  $("edit").addEventListener("click", function(){ editing=!editing; $("edit").textContent = editing?"Listo":"Editar tasas"; renderRates(); });
 
-  renderRates();
+  // Enlace a GitHub Actions cuando la página está publicada en github.io
+  (function(){
+    var m=location.hostname.match(/^([^.]+)\.github\.io$/), repo=location.pathname.split("/").filter(Boolean)[0];
+    if(!m || !repo) return;
+    $("force").href="https://github.com/"+m[1]+"/"+repo+"/actions/workflows/update-rates.yml";
+    $("force-wrap").hidden=false;
+  })();
+
+  inputs.USD.value=fmt(1000,2); recalc(); renderAll();
   refresh(false);
-  // Si la página queda abierta, vuelve a revisar cada hora
   setInterval(function(){ refresh(false); }, 60*60*1000);
-
-  lastSource="USD"; lastValue=1000; inputs.USD.value = fmt(1000,2); recalc();
 })();
 </script>
 </body>

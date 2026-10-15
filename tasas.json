@@ -1,7 +1,7 @@
 {
-  "mxn": {"v": 17.1527, "date": "2026-09-16", "src": "respaldo Banxico"},
-  "clp": {"v": 959.47, "date": "2026-09-18", "src": "respaldo mercado"},
-  "uf": {"v": 41057.2, "date": "2026-09-30", "src": "respaldo SII"},
-  "checked": "2026-09-30T12:00:00Z",
+  "mxn": {"v": 17.1527, "date": "2026-09-16", "src": "valor inicial", "fetched": null},
+  "clp": {"v": 959.47, "date": "2026-09-18", "src": "valor inicial", "fetched": null},
+  "uf": {"v": 41057.2, "date": "2026-09-30", "src": "valor inicial", "fetched": null},
+  "checked": null,
   "errors": []
 }
