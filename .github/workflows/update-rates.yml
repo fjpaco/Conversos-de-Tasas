@@ -29,6 +29,7 @@ jobs:
       - name: Descargar tasas
         env:
           BANXICO_TOKEN: ${{ secrets.BANXICO_TOKEN }}
+          CMF_API_KEY: ${{ secrets.CMF_API_KEY }}
         run: python scripts/update_rates.py
 
       - name: Guardar tasas.json en el repositorio
