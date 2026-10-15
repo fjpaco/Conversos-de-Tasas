@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Conversor USD, MXN, CLP y UF</title>
+<title>Conversor de monedas</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💱</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -119,35 +119,66 @@ h1{
 .btn.link{border:0; background:none; color:var(--accent); padding:0; font-weight:600; text-decoration:underline; cursor:pointer}
 .force{margin:8px 0 6px; font-size:.85rem; color:var(--muted)}
 .force a{color:var(--accent); font-weight:600}
+.toolbar{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 12px}
+.btn.small{font-size:.85rem; padding:7px 12px}
+.btn.ghost[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent); color:var(--ink)}
+.row .tools{display:flex; gap:6px; align-items:center}
+.icon{
+  width:34px; height:34px; display:inline-grid; place-items:center; border:1px solid var(--line);
+  background:transparent; color:var(--ink); border-radius:8px; cursor:pointer; font:inherit; font-size:1rem; line-height:1;
+}
+.icon:hover:not([disabled]){border-color:var(--ink)}
+.icon[disabled]{opacity:.35; cursor:default}
+.icon.remove:hover:not([disabled]){border-color:var(--warn); color:var(--warn)}
+.icon:focus-visible,.copy:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.org .copy{display:none}
+.row .tools .org-only{display:none}
+.org .row .tools .org-only{display:inline-grid}
+.code span{max-width:22ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+
+dialog{
+  width:min(560px, calc(100vw - 24px)); max-height:min(80vh, 720px); padding:0; border:1px solid var(--line);
+  border-radius:14px; background:var(--card); color:var(--ink); display:flex; flex-direction:column;
+}
+dialog:not([open]){display:none}
+dialog::backdrop{background:rgba(10,18,28,.45)}
+.dlg-head{padding:18px 18px 10px; border-bottom:1px solid var(--line)}
+.dlg-head h2{margin:0 0 4px; font-size:1.15rem; font-weight:800; font-stretch:110%}
+.dlg-head p{margin:0 0 12px; font-size:.88rem; color:var(--muted)}
+.dlg-head p.warn{color:var(--warn)}
+.search{
+  width:100%; font:inherit; font-size:1rem; color:var(--ink); background:var(--paper);
+  border:1px solid var(--line); border-radius:8px; padding:9px 12px;
+}
+.search:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+.list{overflow:auto; padding:6px 8px; flex:1}
+.list h3{font-size:.8rem; font-weight:600; color:var(--muted); margin:10px 10px 4px}
+.opt{display:grid; grid-template-columns:auto 4.2em 1fr; gap:10px; align-items:center; padding:8px 10px; border-radius:8px; cursor:pointer}
+.opt:hover{background:var(--paper)}
+.opt input{width:18px; height:18px; accent-color:var(--accent)}
+.opt b{font-weight:700; font-stretch:110%}
+.opt span{color:var(--muted)}
+.opt.off{opacity:.45; cursor:not-allowed}
+.list .empty{padding:16px 10px; color:var(--muted); font-size:.9rem}
+.dlg-foot{display:flex; justify-content:flex-end; gap:8px; padding:12px 18px; border-top:1px solid var(--line)}
+@media (max-width:480px){
+  .row{grid-template-columns:auto 1fr}
+  .row .tools{grid-column:1 / -1; justify-content:flex-end; margin-top:-6px}
+}
 </style>
 </head>
 <body>
 <main>
-  <h1>Conversor USD, MXN, CLP y UF</h1>
-  <p class="lead">Escribe un monto en cualquier fila y las demás se calculan solas. El servidor descarga las tasas todos los días a las 9:30; el botón "Actualizar ahora" las consulta en ese momento.</p>
+  <h1>Conversor de monedas</h1>
+  <p class="lead">Escribe un monto en cualquier fila y las demás se calculan solas. Agrega hasta 10 monedas; tu tablero queda guardado para la próxima vez.</p>
 
-  <section class="board" aria-label="Montos">
-    <div class="row" data-cur="USD">
-      <label class="code" for="in-USD"><b>USD</b><span>Dólar</span></label>
-      <input class="amount" id="in-USD" inputmode="decimal" autocomplete="off" placeholder="0.00">
-      <button class="copy" data-copy="USD">Copiar</button>
-    </div>
-    <div class="row" data-cur="MXN">
-      <label class="code" for="in-MXN"><b>MXN</b><span>Peso mexicano</span></label>
-      <input class="amount" id="in-MXN" inputmode="decimal" autocomplete="off" placeholder="0.00">
-      <button class="copy" data-copy="MXN">Copiar</button>
-    </div>
-    <div class="row" data-cur="CLP">
-      <label class="code" for="in-CLP"><b>CLP</b><span>Peso chileno</span></label>
-      <input class="amount" id="in-CLP" inputmode="decimal" autocomplete="off" placeholder="0">
-      <button class="copy" data-copy="CLP">Copiar</button>
-    </div>
-    <div class="row" data-cur="UF">
-      <label class="code" for="in-UF"><b>UF</b><span>Unidad de Fomento</span></label>
-      <input class="amount" id="in-UF" inputmode="decimal" autocomplete="off" placeholder="0.0000">
-      <button class="copy" data-copy="UF">Copiar</button>
-    </div>
-  </section>
+  <div class="toolbar">
+    <button class="btn small" id="add">Agregar monedas</button>
+    <button class="btn ghost small" id="organize" aria-pressed="false">Organizar tablero</button>
+    <button class="btn ghost small" id="share">Copiar enlace de mi tablero</button>
+  </div>
+
+  <section class="board" id="board" aria-label="Montos"></section>
 
   <div class="status-box">
     <div class="status-row">
@@ -166,44 +197,89 @@ h1{
 
   <section class="rates" aria-label="Tasas en uso">
     <h2>Tasas en uso</h2>
-    <table class="rate-table">
-      <tbody>
-        <tr><td>1 USD en MXN<small id="m-mxn"></small></td><td id="r-mxn"></td></tr>
-        <tr><td>1 USD en CLP<small id="m-clp"></small></td><td id="r-clp"></td></tr>
-        <tr><td>1 UF en CLP<small id="m-uf"></small></td><td id="r-uf"></td></tr>
-      </tbody>
-    </table>
-    <div class="derived" id="derived"></div>
+    <table class="rate-table"><tbody id="rate-body"></tbody></table>
   </section>
 
-  <p class="note">Fuentes: UF y dólar observado de mindicador.cl (datos del Banco Central de Chile). USD/MXN del FIX de Banxico si configuraste el token en GitHub, o de mercado (open.er-api.com) si no. Si una fuente no responde, se conserva el último valor bueno.</p>
+  <p class="note">Fuentes: UF y dólar observado de mindicador.cl (datos del Banco Central de Chile), con respaldo en la CMF. USD/MXN del FIX de Banxico si configuraste el token en GitHub, o de mercado si no. Las demás monedas usan el tipo de cambio de mercado de open.er-api.com. Si una fuente no responde, se conserva el último valor bueno.</p>
 </main>
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<dialog id="picker" aria-labelledby="pk-title">
+  <div class="dlg-head">
+    <h2 id="pk-title">Monedas del tablero</h2>
+    <p id="pk-count"></p>
+    <input class="search" id="pk-search" type="search" placeholder="Busca por nombre o código: sol, libra, COP…" autocomplete="off">
+  </div>
+  <div class="list" id="pk-list"></div>
+  <div class="dlg-foot">
+    <button class="btn ghost" id="pk-cancel">Cancelar</button>
+    <button class="btn" id="pk-save">Guardar tablero</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
 (function(){
   "use strict";
-  var DEC = {USD:2, MXN:2, CLP:0, UF:4};
-  var KEY = "conversor-tasas-v3";
-  var NAMES = {mxn:"USD/MXN", clp:"USD/CLP", uf:"UF"};
+  var KEY_STATE = "conversor-tasas-v4", KEY_BOARD = "conversor-tablero-v1", MAX = 10;
+  var DEFAULT_BOARD = ["USD","MXN","CLP","UF"];
+  var SUGERIDAS = ["COP","PEN","GBP","EUR","BRL","ARS","CAD","CNY","JPY","CHF"];
   var $ = function(id){ return document.getElementById(id); };
-  var inputs = {USD:$("in-USD"), MXN:$("in-MXN"), CLP:$("in-CLP"), UF:$("in-UF")};
 
-  // Estado: cada tasa guarda valor (v), fecha oficial (date), fuente (src) y cuándo se obtuvo (fetched)
-  var state = load() || {
+  // ---------- Nombres y decimales ----------
+  var dn = null; try{ dn = new Intl.DisplayNames(["es"], {type:"currency"}); }catch(e){}
+  function nombre(c){
+    if(c==="UF") return "Unidad de Fomento";
+    var n = c; try{ n = dn ? dn.of(c) : c; }catch(e){}
+    if(!n || n===c) return c;
+    return n.charAt(0).toUpperCase() + n.slice(1);
+  }
+  var DEC_OVERRIDE = {UF:4, CLP:0, COP:0};
+  function decs(c){
+    if(c in DEC_OVERRIDE) return DEC_OVERRIDE[c];
+    try{ return new Intl.NumberFormat("es-MX",{style:"currency", currency:c}).resolvedOptions().maximumFractionDigits; }catch(e){ return 2; }
+  }
+  function sinAcentos(s){ return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase(); }
+
+  // ---------- Estado ----------
+  // rates[c].v = unidades de c por 1 USD; excepción: rates.UF.v = pesos chilenos por 1 UF
+  var state = loadJSON(KEY_STATE) || {
     rates:{
-      mxn:{v:17.1527, date:"2026-09-16", src:"valor inicial", fetched:null},
-      clp:{v:959.47,  date:"2026-09-18", src:"valor inicial", fetched:null},
-      uf: {v:41057.20,date:"2026-09-30", src:"valor inicial", fetched:null}
+      MXN:{v:17.1527, date:"2026-09-16", src:"valor inicial", fetched:null},
+      CLP:{v:959.47,  date:"2026-09-18", src:"valor inicial", fetched:null},
+      UF: {v:41057.20,date:"2026-09-30", src:"valor inicial", fetched:null}
     },
     serverChecked:null, serverErrors:[], liveChecked:null, liveOk:null
   };
-  var lastSource = "USD", lastValue = 1000, editing = false;
+  if(!state.rates) state.rates = {};
+  var board = cleanBoard(loadJSON(KEY_BOARD)) || DEFAULT_BOARD.slice();
 
-  function load(){ try{ var s = JSON.parse(localStorage.getItem(KEY)); return s && s.rates ? s : null; }catch(e){ return null; } }
-  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+  // Tablero recibido por enlace (?m=USD,MXN,...)
+  (function(){
+    var m = new URLSearchParams(location.search).get("m");
+    if(!m) return;
+    var b = cleanBoard(m.split(","));
+    if(b){ board = b; saveBoard(); toast("Tablero cargado desde el enlace"); }
+    try{ history.replaceState(null, "", location.pathname); }catch(e){}
+  })();
 
-  function fmt(n, dec){ return (n===null || !isFinite(n)) ? "" : n.toLocaleString("es-MX",{minimumFractionDigits:dec, maximumFractionDigits:dec}); }
+  function loadJSON(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+  function saveState(){ try{ localStorage.setItem(KEY_STATE, JSON.stringify(state)); }catch(e){} }
+  function saveBoard(){ try{ localStorage.setItem(KEY_BOARD, JSON.stringify(board)); }catch(e){} }
+  function cleanBoard(arr){
+    if(!Array.isArray(arr)) return null;
+    var out = [];
+    arr.forEach(function(c){
+      c = String(c||"").trim().toUpperCase();
+      if((c==="UF" || /^[A-Z]{3}$/.test(c)) && out.indexOf(c)<0 && out.length<MAX) out.push(c);
+    });
+    return out.length ? out : null;
+  }
+
+  var lastSource = board.indexOf("USD")>=0 ? "USD" : board[0], lastValue = 1000;
+  var editing = false, organizing = false, inputs = {};
+
+  // ---------- Formato ----------
+  function fmt(n, d){ return (n===null || !isFinite(n)) ? "" : n.toLocaleString("es-MX",{minimumFractionDigits:d, maximumFractionDigits:d}); }
   function parse(s){
     if(!s) return null;
     s = String(s).replace(/[^\d.,-]/g,"");
@@ -214,179 +290,295 @@ h1{
   var MES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
   function fecha(iso){ if(!iso) return ""; var p = iso.slice(0,10).split("-"); return parseInt(p[2],10)+" "+MES[+p[1]-1]+" "+p[0]; }
   function fechaHora(iso){
-    if(!iso) return "";
-    var d = new Date(iso); if(isNaN(d)) return "";
+    if(!iso) return ""; var d = new Date(iso); if(isNaN(d)) return "";
     return d.getDate()+" "+MES[d.getMonth()]+" "+d.getFullYear()+" a las "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")+" h";
   }
   function nowISO(){ return new Date().toISOString(); }
   function todayISO(){ var d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 
   // ---------- Conversión (todo pasa por USD) ----------
-  function R(k){ return state.rates[k].v; }
-  function toUSD(c,v){ return c==="USD"?v : c==="MXN"? v/R("mxn") : c==="CLP"? v/R("clp") : v*R("uf")/R("clp"); }
-  function fromUSD(c,u){ return c==="USD"?u : c==="MXN"? u*R("mxn") : c==="CLP"? u*R("clp") : u*R("clp")/R("uf"); }
+  function perUSD(c){
+    if(c==="USD") return 1;
+    if(c==="UF"){ var clp = perUSD("CLP"); return (clp && state.rates.UF) ? clp / state.rates.UF.v : null; }
+    return state.rates[c] ? state.rates[c].v : null;
+  }
   function recalc(){
-    document.querySelectorAll(".row").forEach(function(r){ r.classList.toggle("active", r.dataset.cur===lastSource && lastValue!==null); });
-    var usd = lastValue===null ? null : toUSD(lastSource, lastValue);
-    Object.keys(inputs).forEach(function(c){
-      if(c===lastSource) return;
-      inputs[c].value = usd===null ? "" : fmt(fromUSD(c,usd), DEC[c]);
+    var rs = perUSD(lastSource);
+    board.forEach(function(c){
+      var row = inputs[c] && inputs[c].closest(".row");
+      if(row) row.classList.toggle("active", c===lastSource && lastValue!==null);
+      if(c===lastSource || !inputs[c]) return;
+      var r = perUSD(c);
+      if(r===null){ inputs[c].value=""; inputs[c].placeholder="Sin tasa"; return; }
+      inputs[c].placeholder = decs(c) ? "0."+"0".repeat(decs(c)) : "0";
+      inputs[c].value = (lastValue===null || !rs) ? "" : fmt(lastValue / rs * r, decs(c));
     });
   }
-  Object.keys(inputs).forEach(function(cur){
-    var el = inputs[cur];
-    el.addEventListener("input", function(){ lastSource=cur; lastValue=parse(el.value); recalc(); });
-    el.addEventListener("focus", function(){ el.select(); });
-    el.addEventListener("blur", function(){ if(lastSource===cur && lastValue!==null) el.value = fmt(lastValue, DEC[cur]); });
-  });
 
-  // ---------- Copiar ----------
-  document.querySelectorAll(".copy").forEach(function(b){
-    b.addEventListener("click", function(){
-      var v = inputs[b.dataset.copy].value;
-      if(!v){ toast("No hay monto para copiar"); return; }
-      var done = function(){ toast(b.dataset.copy+" "+v+" copiado"); };
-      if(navigator.clipboard) navigator.clipboard.writeText(v).then(done, function(){ legacyCopy(v); done(); });
-      else { legacyCopy(v); done(); }
+  // ---------- Tablero ----------
+  function iconBtn(txt, label, cls, fn){
+    var b = document.createElement("button");
+    b.className = "icon org-only "+(cls||""); b.textContent = txt; b.setAttribute("aria-label", label); b.title = label;
+    b.addEventListener("click", fn); return b;
+  }
+  function renderBoard(){
+    var el = $("board"); el.innerHTML = ""; inputs = {};
+    el.classList.toggle("org", organizing);
+    if(board.indexOf(lastSource)<0){ lastSource = board[0]; }
+    board.forEach(function(c, i){
+      var row = document.createElement("div"); row.className = "row"; row.dataset.cur = c;
+      var lab = document.createElement("label"); lab.className = "code"; lab.htmlFor = "in-"+c;
+      var b = document.createElement("b"); b.textContent = c;
+      var s = document.createElement("span"); s.textContent = nombre(c); s.title = nombre(c);
+      lab.appendChild(b); lab.appendChild(s);
+      var inp = document.createElement("input");
+      inp.className = "amount"; inp.id = "in-"+c; inp.inputMode = "decimal"; inp.autocomplete = "off";
+      inp.setAttribute("aria-label", "Monto en "+nombre(c));
+      inp.addEventListener("input", function(){ lastSource = c; lastValue = parse(inp.value); recalc(); });
+      inp.addEventListener("focus", function(){ inp.select(); });
+      inp.addEventListener("blur", function(){ if(lastSource===c && lastValue!==null) inp.value = fmt(lastValue, decs(c)); });
+      inputs[c] = inp;
+      var tools = document.createElement("div"); tools.className = "tools";
+      var cp = document.createElement("button"); cp.className = "copy"; cp.textContent = "Copiar";
+      cp.addEventListener("click", function(){ copiar(inp.value, c+" "+inp.value+" copiado"); });
+      tools.appendChild(cp);
+      var up = iconBtn("↑", "Subir "+c, "", function(){ move(i,-1); });
+      var dw = iconBtn("↓", "Bajar "+c, "", function(){ move(i,1); });
+      var rm = iconBtn("✕", "Quitar "+c, "remove", function(){ quitar(c); });
+      up.disabled = i===0; dw.disabled = i===board.length-1; rm.disabled = board.length===1;
+      tools.appendChild(up); tools.appendChild(dw); tools.appendChild(rm);
+      row.appendChild(lab); row.appendChild(inp); row.appendChild(tools);
+      el.appendChild(row);
     });
+    if(inputs[lastSource] && lastValue!==null) inputs[lastSource].value = fmt(lastValue, decs(lastSource));
+    recalc(); renderRates();
+  }
+  function move(i, d){
+    var j = i+d; if(j<0 || j>=board.length) return;
+    var t = board[i]; board[i] = board[j]; board[j] = t; saveBoard(); renderBoard();
+    var btns = $("board").querySelectorAll(".row")[j].querySelectorAll(".icon");
+    (d<0 ? btns[0] : btns[1]).focus();
+  }
+  function quitar(c){
+    if(board.length===1) return;
+    board = board.filter(function(x){ return x!==c; }); saveBoard(); renderBoard(); toast(c+" quitada del tablero");
+  }
+
+  $("organize").addEventListener("click", function(){
+    organizing = !organizing;
+    this.setAttribute("aria-pressed", organizing); this.textContent = organizing ? "Listo" : "Organizar tablero";
+    $("board").classList.toggle("org", organizing);
   });
-  function legacyCopy(t){ var ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy");}catch(e){} ta.remove(); }
-  var tt; function toast(m){ var t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(tt); tt=setTimeout(function(){t.classList.remove("show");},2000); }
+  $("share").addEventListener("click", function(){
+    var url = location.href.split(/[?#]/)[0] + "?m=" + board.join(",");
+    copiar(url, "Enlace copiado. Ábrelo en otro equipo para cargar este tablero.");
+  });
 
-  // ---------- Pintar tasas y leyendas ----------
-  function anyManual(){ return ["mxn","clp","uf"].some(function(k){ return state.rates[k].src==="manual"; }); }
+  // ---------- Selector de monedas ----------
+  var temp = [];
+  function disponibles(){
+    var set = {USD:1, UF:1};
+    Object.keys(state.rates).forEach(function(k){ if(/^[A-Z]{3}$/.test(k)) set[k]=1; });
+    return Object.keys(set);
+  }
+  function opcion(c){
+    var lab = document.createElement("label"); lab.className = "opt";
+    var cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = temp.indexOf(c)>=0;
+    var full = !cb.checked && temp.length>=MAX;
+    cb.disabled = full; if(full) lab.classList.add("off");
+    cb.addEventListener("change", function(){
+      if(cb.checked){ if(temp.length>=MAX){ cb.checked=false; return; } temp.push(c); }
+      else temp = temp.filter(function(x){ return x!==c; });
+      renderList();
+    });
+    var b = document.createElement("b"); b.textContent = c;
+    var s = document.createElement("span"); s.textContent = nombre(c);
+    lab.appendChild(cb); lab.appendChild(b); lab.appendChild(s);
+    return lab;
+  }
+  function seccion(list, titulo, codes){
+    if(!codes.length) return;
+    var h = document.createElement("h3"); h.textContent = titulo; list.appendChild(h);
+    codes.forEach(function(c){ list.appendChild(opcion(c)); });
+  }
+  function porNombre(a,b){ return nombre(a).localeCompare(nombre(b), "es"); }
+  function renderList(){
+    var list = $("pk-list"), q = sinAcentos($("pk-search").value.trim());
+    var scroll = list.scrollTop; list.innerHTML = "";
+    var all = disponibles();
+    var cnt = $("pk-count");
+    if(temp.length>=MAX){ cnt.textContent = "Llegaste al máximo de "+MAX+". Desmarca una moneda para agregar otra."; cnt.classList.add("warn"); }
+    else { cnt.textContent = temp.length+" de "+MAX+" monedas seleccionadas."; cnt.classList.remove("warn"); }
+    $("pk-save").disabled = temp.length===0;
+    if(q){
+      var hits = all.filter(function(c){ return sinAcentos(c).indexOf(q)>=0 || sinAcentos(nombre(c)).indexOf(q)>=0; }).sort(porNombre);
+      if(!hits.length){ var e=document.createElement("p"); e.className="empty"; e.textContent="No hay monedas que coincidan con “"+$("pk-search").value+"”."; list.appendChild(e); }
+      hits.forEach(function(c){ list.appendChild(opcion(c)); });
+    } else {
+      seccion(list, "En tu tablero", temp.slice());
+      seccion(list, "Sugeridas", SUGERIDAS.filter(function(c){ return all.indexOf(c)>=0 && temp.indexOf(c)<0; }));
+      seccion(list, "Todas las monedas", all.filter(function(c){ return temp.indexOf(c)<0 && SUGERIDAS.indexOf(c)<0; }).sort(porNombre));
+      if(all.length<=4){ var n=document.createElement("p"); n.className="empty"; n.textContent="La lista completa aparece en cuanto se descarguen las tasas. Presiona “Actualizar ahora”."; list.appendChild(n); }
+    }
+    list.scrollTop = scroll;
+  }
+  $("add").addEventListener("click", function(){
+    temp = board.slice(); $("pk-search").value = ""; renderList();
+    $("picker").showModal(); $("pk-search").focus();
+  });
+  $("pk-search").addEventListener("input", function(){ $("pk-list").scrollTop = 0; renderList(); });
+  $("pk-cancel").addEventListener("click", function(){ $("picker").close(); });
+  $("pk-save").addEventListener("click", function(){
+    if(!temp.length) return;
+    var nuevas = temp.filter(function(c){ return board.indexOf(c)<0; }).length;
+    board = temp.slice(); saveBoard(); $("picker").close(); renderBoard();
+    toast(nuevas ? "Tablero guardado con "+board.length+" monedas" : "Tablero guardado");
+  });
 
+  // ---------- Copiar y avisos ----------
+  function copiar(v, msg){
+    if(!v){ toast("No hay nada para copiar"); return; }
+    var done = function(){ toast(msg); };
+    if(navigator.clipboard) navigator.clipboard.writeText(v).then(done, function(){ legacy(v); done(); });
+    else { legacy(v); done(); }
+  }
+  function legacy(t){ var ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy");}catch(e){} ta.remove(); }
+  var tt; function toast(m){ var t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(tt); tt=setTimeout(function(){t.classList.remove("show");},2400); }
+
+  // ---------- Tabla de tasas y leyendas ----------
+  function anyManual(){ return Object.keys(state.rates).some(function(k){ return state.rates[k].src==="manual"; }); }
   function renderRates(){
-    [["mxn",4],["clp",2],["uf",2]].forEach(function(p){
-      var k=p[0], r=state.rates[k], cell=$("r-"+k), meta=$("m-"+k);
-      cell.innerHTML="";
-      if(editing){
-        var inp=document.createElement("input");
-        inp.className="rate-input"; inp.inputMode="decimal"; inp.value=fmt(r.v,p[1]);
-        inp.setAttribute("aria-label","Tasa "+NAMES[k]);
-        inp.addEventListener("change", function(){
-          var n=parse(inp.value);
-          if(n && n>0){ state.rates[k]={v:n, date:todayISO(), src:"manual", fetched:nowISO()}; save(); recalc(); renderAll(); }
-          else inp.value=fmt(state.rates[k].v,p[1]);
-        });
-        cell.appendChild(inp);
-      } else cell.textContent = fmt(r.v,p[1]);
-
-      meta.classList.toggle("manual", r.src==="manual");
-      if(r.src==="manual") meta.textContent = "Tasa manual, ingresada el "+fechaHora(r.fetched)+". Las actualizaciones no la cambian.";
-      else if(!r.fetched) meta.textContent = "Valor inicial de ejemplo ("+fecha(r.date)+"). Todavía no se ha actualizado.";
-      else meta.textContent = "Valor del "+fecha(r.date)+", obtenido el "+fechaHora(r.fetched)+". Fuente: "+r.src+".";
+    var tb = $("rate-body"); tb.innerHTML = "";
+    board.filter(function(c){ return c!=="USD"; }).forEach(function(c){
+      var r = state.rates[c], tr = document.createElement("tr");
+      var td1 = document.createElement("td"), td2 = document.createElement("td");
+      td1.textContent = c==="UF" ? "1 UF en CLP" : "1 USD en "+c;
+      var meta = document.createElement("small");
+      var rd = (c==="UF" || (r && r.v>=100)) ? 2 : 4;
+      if(!r){ meta.textContent = "Sin tasa disponible todavía."; td2.textContent = "—"; }
+      else {
+        if(editing){
+          var inp = document.createElement("input");
+          inp.className = "rate-input"; inp.inputMode = "decimal"; inp.value = fmt(r.v, rd);
+          inp.setAttribute("aria-label", "Tasa "+td1.textContent);
+          inp.addEventListener("change", function(){
+            var n = parse(inp.value);
+            if(n && n>0){ state.rates[c] = {v:n, date:todayISO(), src:"manual", fetched:nowISO()}; saveState(); recalc(); renderRates(); renderStatus(); }
+            else inp.value = fmt(state.rates[c].v, rd);
+          });
+          td2.appendChild(inp);
+        } else td2.textContent = fmt(r.v, rd);
+        meta.classList.toggle("manual", r.src==="manual");
+        if(r.src==="manual") meta.textContent = "Tasa manual, ingresada el "+fechaHora(r.fetched)+". Las actualizaciones no la cambian.";
+        else if(!r.fetched) meta.textContent = "Valor inicial de ejemplo ("+fecha(r.date)+"). Todavía no se ha actualizado.";
+        else meta.textContent = "Valor del "+fecha(r.date)+", obtenido el "+fechaHora(r.fetched)+". Fuente: "+r.src+".";
+      }
+      td1.appendChild(meta); tr.appendChild(td1); tr.appendChild(td2); tb.appendChild(tr);
     });
-    var ufUsd=R("uf")/R("clp"), mxnClp=R("clp")/R("mxn");
-    $("derived").innerHTML = "<span>1 UF = "+fmt(ufUsd,2)+" USD</span><span>1 UF = "+fmt(R("uf")/mxnClp,2)+" MXN</span><span>1 MXN = "+fmt(mxnClp,2)+" CLP</span>";
+    if(!tb.children.length){ var tr=document.createElement("tr"), td=document.createElement("td"); td.textContent="Agrega una moneda distinta del dólar para ver su tasa."; tr.appendChild(td); tb.appendChild(tr); }
   }
-
   function line(el, label, text, warn){
-    el.innerHTML=""; var b=document.createElement("strong"); b.textContent=label+" ";
+    el.innerHTML = ""; var b = document.createElement("strong"); b.textContent = label+" ";
     el.appendChild(b); el.appendChild(document.createTextNode(text)); el.classList.toggle("warn", !!warn);
   }
   function renderStatus(){
     if(state.serverChecked){
       var errs = state.serverErrors && state.serverErrors.length;
       line($("st-server"), "Servidor:", "última actualización el "+fechaHora(state.serverChecked)+"."+(errs?" Alguna fuente falló; se conservó el valor anterior.":""), errs);
-    } else if(state.serverChecked===false){
-      line($("st-server"), "Servidor:", "no se pudo leer tasas.json.", true);
-    } else {
-      line($("st-server"), "Servidor:", "todavía no ha corrido la actualización automática. Revisa la pestaña Actions en GitHub.", true);
-    }
+    } else if(state.serverChecked===false) line($("st-server"), "Servidor:", "no se pudo leer tasas.json.", true);
+    else line($("st-server"), "Servidor:", "todavía no ha corrido la actualización automática. Revisa la pestaña Actions en GitHub.", true);
     if(state.liveChecked){
-      var o=state.liveOk||{}, miss=[];
+      var o = state.liveOk||{}, miss = [];
       if(!o.uf && !o.clp) miss.push("mindicador (UF y dólar observado; se usan los del servidor)");
-      if(!o.mxn) miss.push("tipo de cambio de mercado");
+      if(!o.mkt) miss.push("tipo de cambio de mercado");
       line($("st-live"), "Consulta directa:", "el "+fechaHora(state.liveChecked)+"."+(miss.length?" No respondió: "+miss.join(", ")+".":""), miss.length===2);
     } else line($("st-live"), "Consulta directa:", "sin realizar.", false);
-    var m=$("st-manual");
-    if(anyManual()){ m.hidden=false; m.innerHTML=""; var b=document.createElement("button"); b.className="btn link"; b.textContent="Volver a tasas automáticas"; b.onclick=resetManual; m.appendChild(document.createTextNode("Hay tasas manuales en uso. ")); m.appendChild(b); m.classList.add("warn"); }
-    else m.hidden=true;
+    var m = $("st-manual");
+    if(anyManual()){
+      m.hidden = false; m.innerHTML = ""; m.classList.add("warn");
+      var b = document.createElement("button"); b.className = "btn link"; b.textContent = "Volver a tasas automáticas"; b.onclick = resetManual;
+      m.appendChild(document.createTextNode("Hay tasas manuales en uso. ")); m.appendChild(b);
+    } else m.hidden = true;
   }
-  function renderAll(){ renderRates(); renderStatus(); }
 
   // ---------- Obtener tasas ----------
   function getJSON(url, ms){
-    var c=new AbortController(), t=setTimeout(function(){c.abort();}, ms||8000);
-    return fetch(url,{signal:c.signal, cache:"no-store"}).then(function(r){ clearTimeout(t); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+    var c = new AbortController(), t = setTimeout(function(){ c.abort(); }, ms||8000);
+    return fetch(url, {signal:c.signal, cache:"no-store"}).then(function(r){ clearTimeout(t); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
       .catch(function(e){ clearTimeout(t); throw e; });
   }
-  // Aplica una tasa solo si no es manual y si es más reciente que la actual
+  function oficial(src){ return /observado|FIX|CMF/.test(src||""); }
+  // Aplica una tasa si no es manual, si no pisa una oficial más reciente o igual, y si es más nueva que la actual
   function offer(k, cand){
     var cur = state.rates[k];
-    if(!cand || !(cand.v>0) || cur.src==="manual") return;
-    if(!cur.fetched || (cand.fetched && Date.parse(cand.fetched) >= Date.parse(cur.fetched))) state.rates[k] = cand;
+    if(!cand || !(cand.v>0)) return;
+    if(cur && cur.src==="manual") return;
+    if(cur && oficial(cur.src) && !oficial(cand.src) && cur.date >= cand.date) return;
+    if(!cur || !cur.fetched || (cand.fetched && Date.parse(cand.fetched) >= Date.parse(cur.fetched))) state.rates[k] = cand;
   }
-
   function fromServer(){
     return getJSON("tasas.json?t="+Date.now(), 6000).then(function(d){
-      state.serverChecked = d.checked || null;
-      state.serverErrors = d.errors || [];
-      ["mxn","clp","uf"].forEach(function(k){ if(d[k] && d[k].fetched) offer(k, {v:+d[k].v, date:d[k].date, src:d[k].src, fetched:d[k].fetched}); });
+      state.serverChecked = d.checked || null; state.serverErrors = d.errors || [];
+      [["mxn","MXN"],["clp","CLP"],["uf","UF"]].forEach(function(p){
+        var x = d[p[0]]; if(x && x.fetched) offer(p[1], {v:+x.v, date:x.date, src:x.src, fetched:x.fetched});
+      });
+      var m = d.market;
+      if(m && m.rates && m.fetched) Object.keys(m.rates).forEach(function(k){
+        if(k!=="USD") offer(k, {v:+m.rates[k], date:m.date, src:m.src, fetched:m.fetched});
+      });
     }).catch(function(){ if(location.protocol!=="file:") state.serverChecked = false; });
   }
-
   function fromLive(){
-    var ok={mxn:false, clp:false, uf:false, mkt:false}, now=nowISO();
+    var ok = {uf:false, clp:false, mkt:false}, now = nowISO();
     var pCl = getJSON("https://mindicador.cl/api").then(function(d){
-      if(d.uf && d.uf.valor){ offer("uf",{v:+d.uf.valor, date:d.uf.fecha.slice(0,10), src:"mindicador", fetched:now}); ok.uf=true; }
-      if(d.dolar && d.dolar.valor){ offer("clp",{v:+d.dolar.valor, date:d.dolar.fecha.slice(0,10), src:"dólar observado", fetched:now}); ok.clp=true; }
+      if(d.uf && d.uf.valor){ offer("UF", {v:+d.uf.valor, date:d.uf.fecha.slice(0,10), src:"mindicador", fetched:now}); ok.uf = true; }
+      if(d.dolar && d.dolar.valor){ offer("CLP", {v:+d.dolar.valor, date:d.dolar.fecha.slice(0,10), src:"dólar observado", fetched:now}); ok.clp = true; }
     }).catch(function(){});
     var pFx = getJSON("https://open.er-api.com/v6/latest/USD").then(function(d){
       if(d.result!=="success") throw new Error("er-api");
-      return {mxn:d.rates.MXN, clp:d.rates.CLP, date:new Date(d.time_last_update_unix*1000).toISOString().slice(0,10), src:"er-api"};
+      return {rates:d.rates, date:new Date(d.time_last_update_unix*1000).toISOString().slice(0,10), src:"er-api"};
     }).catch(function(){
       return getJSON("https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json").then(function(d){
-        return {mxn:d.usd.mxn, clp:d.usd.clp, date:d.date, src:"currency-api"};
+        var r = {}; Object.keys(d.usd).forEach(function(k){ if(/^[a-z]{3}$/.test(k) && d.usd[k]) r[k.toUpperCase()] = d.usd[k]; });
+        return {rates:r, date:d.date, src:"currency-api"};
       });
     }).catch(function(){ return null; });
-    return Promise.all([pCl,pFx]).then(function(res){
-      var fx=res[1];
-      // Si el servidor trae el FIX de Banxico del mismo día, se respeta; el mercado solo lo reemplaza si es de una fecha posterior
-      if(fx && fx.mxn){
-        var cur=state.rates.mxn;
-        if(!(cur.src==="FIX Banxico" && cur.date>=fx.date)) offer("mxn",{v:+fx.mxn, date:fx.date, src:fx.src, fetched:now});
-        ok.mxn=true;
+    return Promise.all([pCl, pFx]).then(function(res){
+      var fx = res[1];
+      if(fx && fx.rates){
+        Object.keys(fx.rates).forEach(function(k){ if(k!=="USD" && /^[A-Z]{3}$/.test(k)) offer(k, {v:+fx.rates[k], date:fx.date, src:fx.src, fetched:now}); });
+        ok.mkt = true;
       }
-      // El dólar observado oficial no se reemplaza por el de mercado salvo que este sea de una fecha posterior
-      if(!ok.clp && fx && fx.clp){
-        var c=state.rates.clp;
-        if(!(/observado/.test(c.src) && c.date>=fx.date)) offer("clp",{v:+fx.clp, date:fx.date, src:fx.src, fetched:now});
-        ok.mkt=true;
-      }
-      state.liveChecked=now; state.liveOk=ok;
+      state.liveChecked = now; state.liveOk = ok;
     });
   }
 
-  var busy=false;
+  var busy = false;
   function refresh(manual){
-    if(busy) return; busy=true;
-    var btn=$("refresh"); btn.disabled=true; btn.textContent="Actualizando…";
-    // Primero el servidor, luego la consulta directa: gana siempre el dato más reciente
+    if(busy) return; busy = true;
+    var btn = $("refresh"); btn.disabled = true; btn.textContent = "Actualizando…";
     fromServer().then(fromLive).then(function(){
-      save(); recalc(); renderAll();
+      saveState(); recalc(); renderRates(); renderStatus();
+      if($("picker").open) renderList();
       if(manual) toast("Tasas actualizadas");
-    }).finally(function(){ busy=false; btn.disabled=false; btn.textContent="Actualizar ahora"; });
+    }).finally(function(){ busy = false; btn.disabled = false; btn.textContent = "Actualizar ahora"; });
   }
-
   function resetManual(){
-    ["mxn","clp","uf"].forEach(function(k){ if(state.rates[k].src==="manual") state.rates[k].src="manual-anterior", state.rates[k].fetched=null; });
-    save(); refresh(true);
+    Object.keys(state.rates).forEach(function(k){ var r = state.rates[k]; if(r.src==="manual"){ r.src = "manual-anterior"; r.fetched = null; } });
+    saveState(); refresh(true);
   }
 
   $("refresh").addEventListener("click", function(){ refresh(true); });
-  $("edit").addEventListener("click", function(){ editing=!editing; $("edit").textContent = editing?"Listo":"Editar tasas"; renderRates(); });
+  $("edit").addEventListener("click", function(){ editing = !editing; this.textContent = editing ? "Listo" : "Editar tasas"; renderRates(); });
 
-  // Enlace a GitHub Actions cuando la página está publicada en github.io
   (function(){
-    var m=location.hostname.match(/^([^.]+)\.github\.io$/), repo=location.pathname.split("/").filter(Boolean)[0];
+    var m = location.hostname.match(/^([^.]+)\.github\.io$/), repo = location.pathname.split("/").filter(Boolean)[0];
     if(!m || !repo) return;
-    $("force").href="https://github.com/"+m[1]+"/"+repo+"/actions/workflows/update-rates.yml";
-    $("force-wrap").hidden=false;
+    $("force").href = "https://github.com/"+m[1]+"/"+repo+"/actions/workflows/update-rates.yml";
+    $("force-wrap").hidden = false;
   })();
 
-  inputs.USD.value=fmt(1000,2); recalc(); renderAll();
+  renderBoard(); renderStatus();
   refresh(false);
   setInterval(function(){ refresh(false); }, 60*60*1000);
 })();
