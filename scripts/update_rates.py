@@ -9,6 +9,7 @@ Fuentes, en orden de preferencia:
                         (requiere el secreto CMF_API_KEY).
   USD/MXN: FIX de Banxico (requiere el secreto BANXICO_TOKEN) o mercado (er-api).
   USD/CLP de mercado: solo si no se obtuvo el dólar observado.
+  'market': tabla completa del dólar contra unas 160 monedas (para el tablero).
 Si una fuente falla, se conserva el último valor bueno que había en tasas.json.
 """
 import json
@@ -91,22 +92,27 @@ def banxico_fix(token):
 
 
 def market():
+    """Tipo de cambio de mercado del dólar contra todas las monedas (unidades por 1 USD)."""
     try:
         d = get_json("https://open.er-api.com/v6/latest/USD", tries=2)
         if d.get("result") != "success":
             raise ValueError("er-api sin datos")
         date = datetime.fromtimestamp(d["time_last_update_unix"], tz=timezone.utc).strftime("%Y-%m-%d")
-        return {"mxn": d["rates"]["MXN"], "clp": d["rates"]["CLP"], "date": date, "src": "er-api"}
+        todas = {k.upper(): float(v) for k, v in d["rates"].items()}
+        src = "er-api"
     except Exception as e:
         print(f"er-api falló: {e}")
         d = get_json("https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json", tries=2)
-        return {"mxn": d["usd"]["mxn"], "clp": d["usd"]["clp"], "date": d["date"], "src": "currency-api"}
+        date = d["date"]
+        todas = {k.upper(): float(v) for k, v in d["usd"].items() if len(k) == 3 and k.isalpha() and v}
+        src = "currency-api"
+    return {"mxn": todas["MXN"], "clp": todas["CLP"], "date": date, "src": src, "all": todas}
 
 
 def main():
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     prev = load_previous()
-    rates = {k: prev[k] for k in ("mxn", "clp", "uf") if k in prev}
+    rates = {k: prev[k] for k in ("mxn", "clp", "uf", "market") if k in prev}
     errors = []
 
     uf = chile_rate("uf", "mindicador", errors)
@@ -133,6 +139,8 @@ def main():
             errors.append(f"Banxico: {e}")
 
     if mkt:
+        rates["market"] = {"date": mkt["date"], "src": mkt["src"], "fetched": now,
+                           "rates": dict(sorted(mkt["all"].items()))}
         if not got_fix:
             rates["mxn"] = {"v": float(mkt["mxn"]), "date": mkt["date"], "src": mkt["src"], "fetched": now}
         if not obs:
